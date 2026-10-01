@@ -11,6 +11,9 @@ const int HUMID_GREEN = 19;
 const int HUMID_YELLOW = 21;
 const int HUMID_RED = 22;
 
+unsigned int sampleRateSeconds = 5;
+const unsigned long STATUS_DISPLAY_TIME_MS = 500;
+
 DHT dht(DHT_PIN, DHT_TYPE);
 
 void setup() {
@@ -41,13 +44,23 @@ void setStatusLeds(float value, float goodMin, float goodMax,
   }
 }
 
+void turnOffAllLeds() {
+  digitalWrite(TEMP_GREEN, LOW);
+  digitalWrite(TEMP_YELLOW, LOW);
+  digitalWrite(TEMP_RED, LOW);
+  digitalWrite(HUMID_GREEN, LOW);
+  digitalWrite(HUMID_YELLOW, LOW);
+  digitalWrite(HUMID_RED, LOW);
+}
+
 void loop() {
   float temperature = dht.readTemperature();
   float humidity = dht.readHumidity();
 
   if (isnan(temperature) || isnan(humidity)) {
     Serial.println("Could not read the DHT22 sensor.");
-    delay(2000);
+    turnOffAllLeds();
+    delay(sampleRateSeconds * 1000UL);
     return;
   }
 
@@ -63,5 +76,12 @@ void loop() {
   Serial.print(humidity, 1);
   Serial.println(" %");
 
-  delay(2000);
+  // Keep the status visible briefly, then turn LEDs off while waiting.
+  delay(STATUS_DISPLAY_TIME_MS);
+  turnOffAllLeds();
+
+  unsigned long sampleIntervalMs = sampleRateSeconds * 1000UL;
+  if (sampleIntervalMs > STATUS_DISPLAY_TIME_MS) {
+    delay(sampleIntervalMs - STATUS_DISPLAY_TIME_MS);
+  }
 }
