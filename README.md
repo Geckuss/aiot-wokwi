@@ -26,4 +26,34 @@ sensor and change its values to test the yellow and red states.
 - Every LED cathode connects to ESP32 `GND`
 
 Open `diagram.json` in Wokwi and start the simulation. The serial monitor shows
-the current readings every two seconds.
+the current readings every `sampleRateSeconds` seconds.
+
+## Collect labelled training data
+
+The sketch also prints CSV rows for a future on-device AI model:
+
+```text
+sample_ms,temperature_c,humidity_percent,label
+```
+
+Before each recording session, change `datasetLabel` in `sketch.ino` to one
+of these labels:
+
+- `comfortable`: temperature 18-26 °C and humidity 30-60%
+- `warning`: moderately too cold, hot, dry, or humid
+- `poor`: strongly too cold, hot, dry, or humid
+
+In Wokwi, set the DHT22 values to match the label, restart the simulation, and
+let it produce at least 30 rows. Copy only the CSV rows from the serial monitor
+into a dataset file. Repeat this for all three labels, including several
+different values and transitions within each class. Keep the header only once.
+
+For example:
+
+```csv
+sample_ms,temperature_c,humidity_percent,label
+1000,22.00,45.00,comfortable
+6000,22.10,45.20,comfortable
+11000,27.50,64.00,warning
+16000,32.00,78.00,poor
+```

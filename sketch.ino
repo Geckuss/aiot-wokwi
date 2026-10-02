@@ -13,6 +13,7 @@ const int HUMID_RED = 22;
 
 unsigned int sampleRateSeconds = 5;
 const unsigned long STATUS_DISPLAY_TIME_MS = 500;
+const char* datasetLabel = "comfortable";
 
 DHT dht(DHT_PIN, DHT_TYPE);
 
@@ -26,6 +27,8 @@ void setup() {
   pinMode(HUMID_GREEN, OUTPUT);
   pinMode(HUMID_YELLOW, OUTPUT);
   pinMode(HUMID_RED, OUTPUT);
+
+  Serial.println("sample_ms,temperature_c,humidity_percent,label");
 }
 
 void setStatusLeds(float value, float goodMin, float goodMax,
@@ -75,6 +78,14 @@ void loop() {
   Serial.print(" C | Humidity: ");
   Serial.print(humidity, 1);
   Serial.println(" %");
+
+  Serial.print(millis());
+  Serial.print(",");
+  Serial.print(temperature, 2);
+  Serial.print(",");
+  Serial.print(humidity, 2);
+  Serial.print(",");
+  Serial.println(datasetLabel);
 
   // Keep the status visible briefly, then turn LEDs off while waiting.
   delay(STATUS_DISPLAY_TIME_MS);
