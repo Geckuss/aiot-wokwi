@@ -1,0 +1,13 @@
+sample_ms,temperature_c,humidity_percent,label
+487,26.80,62.40,warning
+5613,27.60,60.80,warning
+10942,27.10,64.10,warning
+16018,28.40,61.70,warning
+21466,27.90,65.30,warning
+26721,29.00,63.80,warning
+32009,28.30,66.10,warning
+37144,27.50,64.70,warning
+42588,28.80,62.90,warning
+47803,27.20,67.00,warning
+53149,29.40,65.20,warning
+58410,28.10,63.60,warning
