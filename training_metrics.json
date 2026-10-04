@@ -1,0 +1,94 @@
+{
+  "seed": 7,
+  "rows": 36,
+  "train_rows": 24,
+  "test_rows": 12,
+  "train_accuracy": 1.0,
+  "test_accuracy": 1.0,
+  "test_predictions": [
+    {
+      "temperature_c": 20.8,
+      "humidity_percent": 44.7,
+      "expected": "comfortable",
+      "predicted": "comfortable",
+      "confidence": 1.0
+    },
+    {
+      "temperature_c": 21.7,
+      "humidity_percent": 46.4,
+      "expected": "comfortable",
+      "predicted": "comfortable",
+      "confidence": 0.9999
+    },
+    {
+      "temperature_c": 24.0,
+      "humidity_percent": 42.6,
+      "expected": "comfortable",
+      "predicted": "comfortable",
+      "confidence": 0.9999
+    },
+    {
+      "temperature_c": 23.8,
+      "humidity_percent": 42.9,
+      "expected": "comfortable",
+      "predicted": "comfortable",
+      "confidence": 0.9999
+    },
+    {
+      "temperature_c": 27.5,
+      "humidity_percent": 64.7,
+      "expected": "warning",
+      "predicted": "warning",
+      "confidence": 0.9999
+    },
+    {
+      "temperature_c": 27.9,
+      "humidity_percent": 65.3,
+      "expected": "warning",
+      "predicted": "warning",
+      "confidence": 0.9998
+    },
+    {
+      "temperature_c": 27.1,
+      "humidity_percent": 64.1,
+      "expected": "warning",
+      "predicted": "warning",
+      "confidence": 0.9999
+    },
+    {
+      "temperature_c": 29.0,
+      "humidity_percent": 63.8,
+      "expected": "warning",
+      "predicted": "warning",
+      "confidence": 0.9992
+    },
+    {
+      "temperature_c": 35.7,
+      "humidity_percent": 78.6,
+      "expected": "poor",
+      "predicted": "poor",
+      "confidence": 0.9974
+    },
+    {
+      "temperature_c": 33.7,
+      "humidity_percent": 79.2,
+      "expected": "poor",
+      "predicted": "poor",
+      "confidence": 0.9974
+    },
+    {
+      "temperature_c": 36.0,
+      "humidity_percent": 85.0,
+      "expected": "poor",
+      "predicted": "poor",
+      "confidence": 0.9974
+    },
+    {
+      "temperature_c": 33.9,
+      "humidity_percent": 86.0,
+      "expected": "poor",
+      "predicted": "poor",
+      "confidence": 0.9974
+    }
+  ]
+}

@@ -57,3 +57,26 @@ sample_ms,temperature_c,humidity_percent,label
 11000,27.50,64.00,warning
 16000,32.00,78.00,poor
 ```
+
+## Train the first small model
+
+Run the standard-library training script from the project folder:
+
+```text
+Python train_model.py
+```
+
+The script trains a small `2 -> 8 -> 3` neural network:
+
+- Inputs: temperature and humidity
+- Hidden layer: 8 ReLU units
+- Outputs: `comfortable`, `warning`, and `poor`
+
+It uses a deterministic stratified test split and stores the fitted
+normalization values with the model. The generated `model.json` contains the
+weights needed for later ESP32 inference, while `training_metrics.json` records
+the measured train/test accuracy and individual test predictions.
+
+The model-training workflow was AI-assisted: AI helped design the small
+architecture and training script, while the script was run locally against the
+project datasets to produce the recorded model and metrics.
