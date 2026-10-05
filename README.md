@@ -80,3 +80,21 @@ the measured train/test accuracy and individual test predictions.
 The model-training workflow was AI-assisted: AI helped design the small
 architecture and training script, while the script was run locally against the
 project datasets to produce the recorded model and metrics.
+
+## Run the model on the ESP32
+
+The trained weights are copied into `model_data.h`, because the ESP32 cannot
+load a JSON file during the simulation. `sketch.ino` now performs the complete
+inference locally:
+
+1. Read temperature and humidity from the DHT22.
+2. Apply the training normalization values.
+3. Run the `2 -> 8 -> 3` ReLU/softmax network.
+4. Select `comfortable`, `warning`, or `poor`.
+5. Show the prediction on both LED groups.
+
+Keep `sketch.ino` and `model_data.h` in the same Wokwi project, start the
+simulation, and open the Serial Monitor. With the default DHT22 values, the
+green LEDs should light and the monitor should print an AI prediction.
+Change the DHT22 temperature or humidity to test the other classes. The
+prediction is local; no network connection is needed.
