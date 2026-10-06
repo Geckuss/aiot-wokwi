@@ -3,7 +3,7 @@
 import json
 import math
 
-from train_model import ROOT
+from train_model import HIDDEN_UNITS, ROOT
 
 
 def quantize_matrix(matrix):
@@ -26,7 +26,7 @@ def render_header(model):
         "#include <stdint.h>",
         "",
         "const int MODEL_INPUTS = 2;",
-        "const int MODEL_HIDDEN_UNITS = 8;",
+        f"const int MODEL_HIDDEN_UNITS = {HIDDEN_UNITS};",
         "const int MODEL_OUTPUTS = 3;",
         "",
     ]

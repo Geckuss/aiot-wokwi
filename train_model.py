@@ -13,8 +13,8 @@ MODEL_PATH = ROOT / "model.json"
 METRICS_PATH = ROOT / "training_metrics.json"
 LABELS = ["comfortable", "warning", "poor"]
 FEATURES = ["temperature_c", "humidity_percent"]
-HIDDEN_UNITS = 8
-TEST_ROWS_PER_CLASS = 4
+HIDDEN_UNITS = 24
+TEST_FRACTION = 0.2
 SEED = 7
 
 
@@ -33,11 +33,24 @@ def split_rows(rows):
     randomizer = random.Random(SEED)
     train_rows = []
     test_rows = []
+    boundary_temperatures = {17.0, 19.0, 25.0, 27.0}
+    boundary_humidities = {20.0, 30.0, 60.0, 70.0}
     for label in LABELS:
         class_rows = [row for row in rows if row[1] == label]
         randomizer.shuffle(class_rows)
-        test_rows.extend(class_rows[:TEST_ROWS_PER_CLASS])
-        train_rows.extend(class_rows[TEST_ROWS_PER_CLASS:])
+        boundary_rows = [
+            row for row in class_rows
+            if row[0][0] in boundary_temperatures
+            or row[0][1] in boundary_humidities
+        ]
+        other_rows = [
+            row for row in class_rows
+            if row[0][0] not in boundary_temperatures
+            and row[0][1] not in boundary_humidities
+        ]
+        test_count = max(1, round(len(other_rows) * TEST_FRACTION))
+        test_rows.extend(other_rows[:test_count])
+        train_rows.extend(other_rows[test_count:] + boundary_rows)
     randomizer.shuffle(train_rows)
     return train_rows, test_rows
 
@@ -85,6 +98,10 @@ def predict(features, weights):
 
 def train(train_rows, means, scales):
     randomizer = random.Random(SEED)
+    class_weights = {
+        label: len(train_rows) / (len(LABELS) * sum(row[1] == label for row in train_rows))
+        for label in LABELS
+    }
     weights = {
         "hidden_weights": [
             [randomizer.uniform(-0.1, 0.1) for _ in FEATURES]
@@ -99,15 +116,18 @@ def train(train_rows, means, scales):
     }
     learning_rate = 0.03
 
-    for _ in range(1200):
+    for _ in range(3500):
         randomizer.shuffle(train_rows)
         for raw_features, label in train_rows:
             features = normalize(raw_features, means, scales)
             hidden, probabilities = predict(features, weights)
             target = [1.0 if item == label else 0.0 for item in LABELS]
 
-            output_error = [probability - expected
-                            for probability, expected in zip(probabilities, target)]
+            sample_weight = class_weights[label]
+            output_error = [
+                sample_weight * (probability - expected)
+                for probability, expected in zip(probabilities, target)
+            ]
             hidden_error = [
                 sum(output_error[label_index] *
                     weights["output_weights"][label_index][unit]
@@ -161,7 +181,7 @@ def main():
     test_accuracy, predictions = evaluate(test_rows, weights, means, scales)
 
     model = {
-        "architecture": "2 inputs -> 8 ReLU units -> 3 softmax outputs",
+        "architecture": f"2 inputs -> {HIDDEN_UNITS} ReLU units -> 3 softmax outputs",
         "features": FEATURES,
         "labels": LABELS,
         "normalization": {"means": means, "scales": scales},

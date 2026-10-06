@@ -15,7 +15,6 @@ const int HUMID_RED = 22;
 
 unsigned int sampleRateSeconds = 5;
 const unsigned long STATUS_DISPLAY_TIME_MS = 500;
-const char* datasetLabel = "inference";
 
 DHT dht(DHT_PIN, DHT_TYPE);
 
@@ -30,7 +29,6 @@ void setup() {
   pinMode(HUMID_YELLOW, OUTPUT);
   pinMode(HUMID_RED, OUTPUT);
 
-  Serial.println("sample_ms,temperature_c,humidity_percent,label");
 }
 
 void turnOffAllLeds() {
@@ -42,7 +40,7 @@ void turnOffAllLeds() {
   digitalWrite(HUMID_RED, LOW);
 }
 
-int predictCondition(float temperature, float humidity, float* confidence) {
+int predictCondition(float temperature, float humidity) {
   float inputs[MODEL_INPUTS] = {
     (temperature - NORMALIZATION_MEANS[0]) / NORMALIZATION_SCALES[0],
     (humidity - NORMALIZATION_MEANS[1]) / NORMALIZATION_SCALES[1]
@@ -58,30 +56,17 @@ int predictCondition(float temperature, float humidity, float* confidence) {
   }
 
   float logits[MODEL_OUTPUTS];
-  float largestLogit;
+  int bestOutput = 0;
   for (int output = 0; output < MODEL_OUTPUTS; output++) {
     logits[output] = OUTPUT_BIAS[output];
     for (int unit = 0; unit < MODEL_HIDDEN_UNITS; unit++) {
       logits[output] += hidden[unit] * OUTPUT_WEIGHTS[output][unit]
                         * OUTPUT_WEIGHT_SCALE;
     }
-    if (output == 0 || logits[output] > largestLogit) {
-      largestLogit = logits[output];
-    }
-  }
-
-  float sumExp = 0;
-  int bestOutput = 0;
-  *confidence = 0;
-  for (int output = 0; output < MODEL_OUTPUTS; output++) {
-    float probability = expf(logits[output] - largestLogit);
-    sumExp += probability;
-    if (probability > *confidence) {
-      *confidence = probability;
+    if (logits[output] > logits[bestOutput]) {
       bestOutput = output;
     }
   }
-  *confidence /= sumExp;
   return bestOutput;
 }
 
@@ -110,8 +95,7 @@ void loop() {
     return;
   }
 
-  float confidence;
-  int condition = predictCondition(temperature, humidity, &confidence);
+  int condition = predictCondition(temperature, humidity);
   showPrediction(condition);
 
   Serial.print("Temperature: ");
@@ -121,17 +105,7 @@ void loop() {
   Serial.println(" %");
   Serial.print("AI prediction: ");
   Serial.print(MODEL_LABELS[condition]);
-  Serial.print(" (confidence ");
-  Serial.print(confidence * 100, 1);
-  Serial.println("%)");
-
-  Serial.print(millis());
-  Serial.print(",");
-  Serial.print(temperature, 2);
-  Serial.print(",");
-  Serial.print(humidity, 2);
-  Serial.print(",");
-  Serial.println(datasetLabel);
+  Serial.println();
 
   // Keep the status visible briefly, then turn LEDs off while waiting.
   delay(STATUS_DISPLAY_TIME_MS);
