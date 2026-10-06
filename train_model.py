@@ -13,7 +13,8 @@ MODEL_PATH = ROOT / "model.json"
 METRICS_PATH = ROOT / "training_metrics.json"
 LABELS = ["comfortable", "warning", "poor"]
 FEATURES = ["temperature_c", "humidity_percent"]
-HIDDEN_UNITS = 24
+HIDDEN_UNITS = 16
+EPOCHS = 5000
 TEST_FRACTION = 0.2
 SEED = 7
 
@@ -33,24 +34,12 @@ def split_rows(rows):
     randomizer = random.Random(SEED)
     train_rows = []
     test_rows = []
-    boundary_temperatures = {17.0, 19.0, 25.0, 27.0}
-    boundary_humidities = {20.0, 30.0, 60.0, 70.0}
     for label in LABELS:
         class_rows = [row for row in rows if row[1] == label]
         randomizer.shuffle(class_rows)
-        boundary_rows = [
-            row for row in class_rows
-            if row[0][0] in boundary_temperatures
-            or row[0][1] in boundary_humidities
-        ]
-        other_rows = [
-            row for row in class_rows
-            if row[0][0] not in boundary_temperatures
-            and row[0][1] not in boundary_humidities
-        ]
-        test_count = max(1, round(len(other_rows) * TEST_FRACTION))
-        test_rows.extend(other_rows[:test_count])
-        train_rows.extend(other_rows[test_count:] + boundary_rows)
+        test_count = max(1, round(len(class_rows) * TEST_FRACTION))
+        test_rows.extend(class_rows[:test_count])
+        train_rows.extend(class_rows[test_count:])
     randomizer.shuffle(train_rows)
     return train_rows, test_rows
 
@@ -116,7 +105,7 @@ def train(train_rows, means, scales):
     }
     learning_rate = 0.03
 
-    for _ in range(3500):
+    for _ in range(EPOCHS):
         randomizer.shuffle(train_rows)
         for raw_features, label in train_rows:
             features = normalize(raw_features, means, scales)
@@ -156,20 +145,11 @@ def train(train_rows, means, scales):
 
 def evaluate(rows, weights, means, scales):
     correct = 0
-    predictions = []
     for raw_features, expected in rows:
         _, probabilities = predict(normalize(raw_features, means, scales), weights)
         predicted_index = max(range(len(LABELS)), key=probabilities.__getitem__)
-        predicted = LABELS[predicted_index]
-        correct += predicted == expected
-        predictions.append({
-            "temperature_c": raw_features[0],
-            "humidity_percent": raw_features[1],
-            "expected": expected,
-            "predicted": predicted,
-            "confidence": round(probabilities[predicted_index], 4),
-        })
-    return correct / len(rows), predictions
+        correct += LABELS[predicted_index] == expected
+    return correct / len(rows)
 
 
 def main():
@@ -177,8 +157,8 @@ def main():
     train_rows, test_rows = split_rows(rows)
     means, scales = fit_scaler(train_rows)
     weights = train(train_rows, means, scales)
-    train_accuracy, _ = evaluate(train_rows, weights, means, scales)
-    test_accuracy, predictions = evaluate(test_rows, weights, means, scales)
+    train_accuracy = evaluate(train_rows, weights, means, scales)
+    test_accuracy = evaluate(test_rows, weights, means, scales)
 
     model = {
         "architecture": f"2 inputs -> {HIDDEN_UNITS} ReLU units -> 3 softmax outputs",
@@ -194,7 +174,6 @@ def main():
         "test_rows": len(test_rows),
         "train_accuracy": round(train_accuracy, 4),
         "test_accuracy": round(test_accuracy, 4),
-        "test_predictions": predictions,
     }
     MODEL_PATH.write_text(json.dumps(model, indent=2) + "\n")
     METRICS_PATH.write_text(json.dumps(metrics, indent=2) + "\n")
