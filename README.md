@@ -45,3 +45,7 @@ Keep `sketch.ino` and `model_data.h` in the Wokwi project. Start the simulation
 and open the Serial Monitor to see readings and predictions. Run
 `python -m unittest discover -s tests` to check quantized predictions against
 held-out examples and representative range cases.
+
+## Wokwi link
+
+https://wokwi.com/projects/477126958241739777
