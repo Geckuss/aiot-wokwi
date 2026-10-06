@@ -52,30 +52,36 @@ int predictCondition(float temperature, float humidity, float* confidence) {
   for (int unit = 0; unit < MODEL_HIDDEN_UNITS; unit++) {
     float value = HIDDEN_BIAS[unit];
     for (int input = 0; input < MODEL_INPUTS; input++) {
-      value += inputs[input] * HIDDEN_WEIGHTS[unit][input];
+      value += inputs[input] * HIDDEN_WEIGHTS[unit][input] * HIDDEN_WEIGHT_SCALE;
     }
     hidden[unit] = value > 0 ? value : 0;
   }
 
   float logits[MODEL_OUTPUTS];
-  float sumExp = 0;
+  float largestLogit;
   for (int output = 0; output < MODEL_OUTPUTS; output++) {
     logits[output] = OUTPUT_BIAS[output];
     for (int unit = 0; unit < MODEL_HIDDEN_UNITS; unit++) {
-      logits[output] += hidden[unit] * OUTPUT_WEIGHTS[output][unit];
+      logits[output] += hidden[unit] * OUTPUT_WEIGHTS[output][unit]
+                        * OUTPUT_WEIGHT_SCALE;
     }
-    sumExp += exp(logits[output]);
+    if (output == 0 || logits[output] > largestLogit) {
+      largestLogit = logits[output];
+    }
   }
 
+  float sumExp = 0;
   int bestOutput = 0;
   *confidence = 0;
   for (int output = 0; output < MODEL_OUTPUTS; output++) {
-    float probability = exp(logits[output]) / sumExp;
+    float probability = expf(logits[output] - largestLogit);
+    sumExp += probability;
     if (probability > *confidence) {
       *confidence = probability;
       bestOutput = output;
     }
   }
+  *confidence /= sumExp;
   return bestOutput;
 }
 

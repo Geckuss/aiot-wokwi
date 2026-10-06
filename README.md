@@ -1,20 +1,17 @@
 # Indoor temperature and humidity monitor
 
 This Wokwi project uses an **ESP32 DevKit v1**, a DHT22 sensor, and six LEDs.
-The ESP32 is a good choice for this project because it has built-in Wi-Fi for
-future AIoT features, while the first version stays local and easy to understand.
+The first version runs locally; the ESP32's Wi-Fi is available for future work.
 
 ## LED meaning
-
-There are three LEDs for each measurement:
 
 | Measurement | Green | Yellow | Red |
 | --- | --- | --- | --- |
 | Temperature | 18-26 °C | 15-17 °C or 27-30 °C | below 15 °C or above 30 °C |
 | Humidity | 30-60% | 20-29% or 61-70% | below 20% or above 70% |
 
-The DHT22 starts at 22 °C and 45% humidity. In the Wokwi simulator, click the
-sensor and change its values to test the yellow and red states.
+The DHT22 starts at 22 °C and 45% humidity. Change its values in Wokwi to test
+the other states.
 
 ## Wiring
 
@@ -25,76 +22,32 @@ sensor and change its values to test the yellow and red states.
 - Humidity LEDs: GPIO 19, 21, 22 through 220 ohm resistors
 - Every LED cathode connects to ESP32 `GND`
 
-Open `diagram.json` in Wokwi and start the simulation. The serial monitor shows
-the current readings every `sampleRateSeconds` seconds.
+## Train the model
 
-## Collect labelled training data
-
-The sketch also prints CSV rows for a future on-device AI model:
+The sketch prints rows in this format:
 
 ```text
 sample_ms,temperature_c,humidity_percent,label
 ```
 
-Before each recording session, change `datasetLabel` in `sketch.ino` to one
-of these labels:
-
-- `comfortable`: temperature 18-26 °C and humidity 30-60%
-- `warning`: moderately too cold, hot, dry, or humid
-- `poor`: strongly too cold, hot, dry, or humid
-
-In Wokwi, set the DHT22 values to match the label, restart the simulation, and
-let it produce at least 30 rows. Copy only the CSV rows from the serial monitor
-into a dataset file. Repeat this for all three labels, including several
-different values and transitions within each class. Keep the header only once.
-
-For example:
-
-```csv
-sample_ms,temperature_c,humidity_percent,label
-1000,22.00,45.00,comfortable
-6000,22.10,45.20,comfortable
-11000,27.50,64.00,warning
-16000,32.00,78.00,poor
-```
-
-## Train the first small model
-
-Run the standard-library training script from the project folder:
+Set `datasetLabel` in `sketch.ino`, record examples for `comfortable`,
+`warning`, and `poor`, and save them in the matching CSV files under `datasets`.
+Then run:
 
 ```text
-Python train_model.py
+python train_model.py
 ```
 
-The script trains a small `2 -> 8 -> 3` neural network:
+This trains a small `2 -> 8 -> 3` neural network and saves it to `model.json`.
 
-- Inputs: temperature and humidity
-- Hidden layer: 8 ReLU units
-- Outputs: `comfortable`, `warning`, and `poor`
+## Quantize and run on the ESP32
 
-It uses a deterministic stratified test split and stores the fitted
-normalization values with the model. The generated `model.json` contains the
-weights needed for later ESP32 inference, while `training_metrics.json` records
-the measured train/test accuracy and individual test predictions.
+Run `python optimize_model.py` to export the model to `model_data.h`, which the
+ESP32 can use without reading JSON. The two weight matrices are stored as int8
+with one scale per layer. Biases, activations, and inference remain float:
+this is simple weight-only quantization, not a fully integer model.
 
-The model-training workflow was AI-assisted: AI helped design the small
-architecture and training script, while the script was run locally against the
-project datasets to produce the recorded model and metrics.
-
-## Run the model on the ESP32
-
-The trained weights are copied into `model_data.h`, because the ESP32 cannot
-load a JSON file during the simulation. `sketch.ino` now performs the complete
-inference locally:
-
-1. Read temperature and humidity from the DHT22.
-2. Apply the training normalization values.
-3. Run the `2 -> 8 -> 3` ReLU/softmax network.
-4. Select `comfortable`, `warning`, or `poor`.
-5. Show the prediction on both LED groups.
-
-Keep `sketch.ino` and `model_data.h` in the same Wokwi project, start the
-simulation, and open the Serial Monitor. With the default DHT22 values, the
-green LEDs should light and the monitor should print an AI prediction.
-Change the DHT22 temperature or humidity to test the other classes. The
-prediction is local; no network connection is needed.
+Keep `sketch.ino` and `model_data.h` in the Wokwi project. Start the simulation
+and open the Serial Monitor to see readings and predictions. Run
+`python -m unittest discover -s tests` to check the quantized model against the
+held-out training rows.
